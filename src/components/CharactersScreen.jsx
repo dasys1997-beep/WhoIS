@@ -22,6 +22,15 @@ function initials(name) {
     .toUpperCase();
 }
 
+function confirmDelete(message, onConfirm) {
+  const tg = window.Telegram?.WebApp;
+  if (tg?.showConfirm) {
+    tg.showConfirm(message, (ok) => { if (ok) onConfirm(); });
+  } else if (window.confirm(message)) {
+    onConfirm();
+  }
+}
+
 const deleteStyle = {
   flexShrink: 0,
   marginLeft: 4,
@@ -51,8 +60,9 @@ export default function CharactersScreen({ book, characters, onBack, onOpenChar,
 
   function handleDelete(e, character) {
     e.stopPropagation();
-    const confirmed = window.confirm(`Видалити персонажа "${character.name}"? Це незворотно.`);
-    if (confirmed && onDeleteChar) onDeleteChar(character.id);
+    confirmDelete(`Видалити "${character.name}"?`, () => {
+      if (onDeleteChar) onDeleteChar(character.id);
+    });
   }
 
   return (

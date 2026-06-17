@@ -1,6 +1,15 @@
 import { useState, useMemo } from 'react';
 import { GENRES } from '../initialData';
 
+function confirmDelete(message, onConfirm) {
+  const tg = window.Telegram?.WebApp;
+  if (tg?.showConfirm) {
+    tg.showConfirm(message, (ok) => { if (ok) onConfirm(); });
+  } else if (window.confirm(message)) {
+    onConfirm();
+  }
+}
+
 const deleteStyle = {
   flexShrink: 0,
   marginLeft: 4,
@@ -37,10 +46,9 @@ export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings, 
 
   function handleDelete(e, book) {
     e.stopPropagation();
-    const confirmed = window.confirm(
-      `Видалити книгу "${book.title}"? Усі її персонажі та нотатки видаляться назавжди.`
-    );
-    if (confirmed && onDeleteBook) onDeleteBook(book.id);
+    confirmDelete(`Видалити книгу "${book.title}"?\nУсі персонажі та нотатки зникнуть.`, () => {
+      if (onDeleteBook) onDeleteBook(book.id);
+    });
   }
 
   return (
