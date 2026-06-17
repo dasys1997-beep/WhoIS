@@ -10,20 +10,6 @@ function confirmDelete(message, onConfirm) {
   }
 }
 
-const deleteStyle = {
-  flexShrink: 0,
-  marginLeft: 4,
-  padding: '6px',
-  background: 'none',
-  border: 'none',
-  borderRadius: 8,
-  color: '#DC2626',
-  cursor: 'pointer',
-  fontSize: 18,
-  display: 'flex',
-  alignItems: 'center',
-};
-
 export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings, onDeleteBook }) {
   const [activeGenre, setActiveGenre] = useState('all');
 
@@ -111,7 +97,8 @@ export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings, 
                   <i className="ti ti-chevron-right chevron" aria-hidden="true"></i>
                 </div>
                 <button
-                  style={deleteStyle}
+                  className="icon-btn"
+                  style={{ color: '#DC2626', marginLeft: 4, flexShrink: 0 }}
                   onClick={(e) => handleDelete(e, book)}
                   aria-label="Видалити книгу"
                 >

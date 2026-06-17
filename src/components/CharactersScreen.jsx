@@ -31,20 +31,6 @@ function confirmDelete(message, onConfirm) {
   }
 }
 
-const deleteStyle = {
-  flexShrink: 0,
-  marginLeft: 4,
-  padding: '6px',
-  background: 'none',
-  border: 'none',
-  borderRadius: 8,
-  color: '#DC2626',
-  cursor: 'pointer',
-  fontSize: 18,
-  display: 'flex',
-  alignItems: 'center',
-};
-
 export default function CharactersScreen({ book, characters, onBack, onOpenChar, onAddChar, onOpenNotes, onDeleteChar }) {
   const [activeRole, setActiveRole] = useState('all');
 
@@ -141,7 +127,8 @@ export default function CharactersScreen({ book, characters, onBack, onOpenChar,
                 <i className="ti ti-chevron-right" style={{ fontSize: 15, color: 'var(--muted)', flexShrink: 0 }} aria-hidden="true"></i>
               </div>
               <button
-                style={deleteStyle}
+                className="icon-btn"
+                style={{ color: '#DC2626', marginLeft: 4, flexShrink: 0 }}
                 onClick={(e) => handleDelete(e, c)}
                 aria-label="Видалити персонажа"
               >
