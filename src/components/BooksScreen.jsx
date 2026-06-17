@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { GENRES } from '../initialData';
 
-export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings }) {
+export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings, onDeleteBook }) {
   const [activeGenre, setActiveGenre] = useState('all');
 
   const usedGenres = useMemo(() => {
@@ -20,6 +20,14 @@ export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings }
   }, [books, activeGenre]);
 
   const spineColors = ['#C8A97E', '#A07850', '#5DCAA5', '#9F7DD1', '#D4956A', '#7B8FE8'];
+
+  function handleDelete(e, book) {
+    e.stopPropagation();
+    const confirmed = window.confirm(
+      `Видалити книгу "${book.title}"? Усі її персонажі та нотатки видаляться назавжди.`
+    );
+    if (confirmed) onDeleteBook(book.id);
+  }
 
   return (
     <div className="screen">
@@ -75,6 +83,14 @@ export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings }
                   </div>
                 </div>
                 <i className="ti ti-chevron-right chevron" aria-hidden="true"></i>
+                <button
+                  className="icon-btn"
+                  style={{ fontSize: 16, marginLeft: 2 }}
+                  onClick={(e) => handleDelete(e, book)}
+                  aria-label="Видалити книгу"
+                >
+                  <i className="ti ti-trash" aria-hidden="true"></i>
+                </button>
               </div>
             ))}
           </div>

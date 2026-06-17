@@ -45,6 +45,7 @@ export function useBookData() {
       name: c.name,
       role: c.role,
       description: c.description || '',
+      events: c.events || '',
       tags: c.tags || [],
       freeNote: c.free_note || '',
       createdAt: new Date(c.created_at).getTime(),
@@ -126,6 +127,7 @@ export function useBookData() {
             name: character.name,
             role: character.role,
             description: character.description || '',
+            events: character.events || '',
             tags: character.tags || [],
             freeNote: '',
             createdAt: Date.now(),
@@ -143,6 +145,7 @@ export function useBookData() {
         name: character.name,
         role: character.role,
         description: character.description || '',
+        events: character.events || '',
         tags: character.tags || [],
       })
       .select()
@@ -168,6 +171,7 @@ export function useBookData() {
 
     const dbPatch = {};
     if ('description' in patch) dbPatch.description = patch.description;
+    if ('events' in patch) dbPatch.events = patch.events;
     if ('freeNote' in patch) dbPatch.free_note = patch.freeNote;
     if ('role' in patch) dbPatch.role = patch.role;
     if ('tags' in patch) dbPatch.tags = patch.tags;
@@ -181,6 +185,35 @@ export function useBookData() {
     const current = data.characters.find((c) => c.id === charId);
     const newDescription = current?.description ? current.description + '\n\n' + text : text;
     await updateCharacter(charId, { description: newDescription });
+  }
+
+  async function deleteBook(bookId) {
+    if (!configured) {
+      setData((d) => ({
+        ...d,
+        books: d.books.filter((b) => b.id !== bookId),
+        characters: d.characters.filter((c) => c.bookId !== bookId),
+      }));
+      return;
+    }
+
+    // characters і book_notes мають "on delete cascade" у схемі —
+    // видалення книги автоматично прибирає її персонажів і нотатки.
+    await supabase.from('books').delete().eq('id', bookId);
+    await reload();
+  }
+
+  async function deleteCharacter(charId) {
+    if (!configured) {
+      setData((d) => ({
+        ...d,
+        characters: d.characters.filter((c) => c.id !== charId),
+      }));
+      return;
+    }
+
+    await supabase.from('characters').delete().eq('id', charId);
+    await reload();
   }
 
   async function setBookNote(bookId, text) {
@@ -202,8 +235,10 @@ export function useBookData() {
     configured,
     addBook,
     updateBook,
+    deleteBook,
     addCharacter,
     updateCharacter,
+    deleteCharacter,
     appendToCharacter,
     setBookNote,
   };

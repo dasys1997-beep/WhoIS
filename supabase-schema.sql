@@ -21,6 +21,7 @@ create table characters (
   name text not null,
   role text,
   description text default '',
+  events text default '',             -- окрема секція "що персонаж робив/де був"
   tags text[] default '{}',
   free_note text default '',
   created_at timestamptz default now()

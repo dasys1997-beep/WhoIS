@@ -22,7 +22,7 @@ function initials(name) {
     .toUpperCase();
 }
 
-export default function CharactersScreen({ book, characters, onBack, onOpenChar, onAddChar, onOpenNotes }) {
+export default function CharactersScreen({ book, characters, onBack, onOpenChar, onAddChar, onOpenNotes, onDeleteChar }) {
   const [activeRole, setActiveRole] = useState('all');
 
   const usedRoles = useMemo(() => {
@@ -36,6 +36,12 @@ export default function CharactersScreen({ book, characters, onBack, onOpenChar,
   // Нещодавно додані — спочатку, щоб при великій кількості персонажів
   // не доводилось шукати того кого щойно записав.
   const sorted = [...filtered].sort((a, b) => b.createdAt - a.createdAt);
+
+  function handleDelete(e, character) {
+    e.stopPropagation();
+    const confirmed = window.confirm(`Видалити персонажа "${character.name}"? Це незворотно.`);
+    if (confirmed) onDeleteChar(character.id);
+  }
 
   return (
     <div className="screen">
@@ -93,6 +99,14 @@ export default function CharactersScreen({ book, characters, onBack, onOpenChar,
                 )}
               </div>
               <i className="ti ti-chevron-right chevron" aria-hidden="true"></i>
+              <button
+                className="icon-btn"
+                style={{ fontSize: 16, marginLeft: 2 }}
+                onClick={(e) => handleDelete(e, c)}
+                aria-label="Видалити персонажа"
+              >
+                <i className="ti ti-trash" aria-hidden="true"></i>
+              </button>
             </div>
           );
         })}

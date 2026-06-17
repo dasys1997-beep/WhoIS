@@ -21,8 +21,10 @@ export default function App() {
     configured,
     addBook,
     updateBook,
+    deleteBook,
     addCharacter,
     updateCharacter,
+    deleteCharacter,
     appendToCharacter,
     setBookNote,
   } = useBookData();
@@ -79,6 +81,9 @@ export default function App() {
             onOpenBook={(bookId) => navigate('characters', { bookId })}
             onAddBook={() => navigate('addBook')}
             onSettings={() => navigate('settings')}
+            onDeleteBook={async (bookId) => {
+              await deleteBook(bookId);
+            }}
           />
         )}
 
@@ -100,6 +105,9 @@ export default function App() {
             onOpenChar={(charId) => navigate('charDetail', { bookId: currentBook.id, charId })}
             onAddChar={() => navigate('addChar', { bookId: currentBook.id })}
             onOpenNotes={() => navigate('bookNotes', { bookId: currentBook.id })}
+            onDeleteChar={async (charId) => {
+              await deleteCharacter(charId);
+            }}
           />
         )}
 
@@ -125,6 +133,11 @@ export default function App() {
             book={currentBook}
             onBack={() => navigate('characters', { bookId: currentChar.bookId })}
             onUpdate={(patch) => updateCharacter(currentChar.id, patch)}
+            onDelete={async () => {
+              const bookId = currentChar.bookId;
+              await deleteCharacter(currentChar.id);
+              navigate('characters', { bookId });
+            }}
           />
         )}
 

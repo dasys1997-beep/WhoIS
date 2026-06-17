@@ -1,15 +1,17 @@
 import { useState, useRef } from 'react';
 
-// Цей компонент реалізує флоу, який ми узгодили: користувач фотографує
-// сторінку прямо на картці персонажа → AI пропонує розпізнаний текст →
-// користувач РЕДАГУЄ і ПІДТВЕРДЖУЄ перед збереженням. Нічого не йде
-// в базу даних автоматично.
+// Цей компонент реалізує флоу "AI пропонує, людина підтверджує" —
+// включно з вибором ДО КОГО додати текст. Свідомо НЕ робимо це
+// автоматично навіть якщо AI розпізнав ім'я: текст без імені,
+// кілька персонажів в одному уривку чи схожі імена — усе це
+// реальні випадки, де мовчазна помилка гірша за зайвий тап.
 
 export default function PhotoRecognizeModal({ onClose, onConfirm }) {
   const [stage, setStage] = useState('pick'); // pick | loading | review | error
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
   const [editedText, setEditedText] = useState('');
+  const [targetField, setTargetField] = useState('description'); // description | events
   const [errorMsg, setErrorMsg] = useState('');
   const fileInputRef = useRef(null);
 
@@ -41,6 +43,7 @@ export default function PhotoRecognizeModal({ onClose, onConfirm }) {
         const data = await resp.json();
         setResult(data);
         setEditedText(data.description || data.rawText || '');
+        if (data.suggestedField === 'events') setTargetField('events');
         setStage('review');
       } catch (err) {
         setErrorMsg(err.message || 'Сталася помилка');
@@ -51,7 +54,7 @@ export default function PhotoRecognizeModal({ onClose, onConfirm }) {
   }
 
   function handleConfirm() {
-    onConfirm(editedText, result);
+    onConfirm(editedText, result, targetField);
   }
 
   return (
@@ -90,7 +93,7 @@ export default function PhotoRecognizeModal({ onClose, onConfirm }) {
         {stage === 'pick' && (
           <div>
             <p className="desc-text" style={{ color: 'var(--muted)', marginBottom: 12 }}>
-              Сфотографуй сторінку з описом персонажа. AI прочитає текст і запропонує додати — ти завжди можеш відредагувати перед збереженням.
+              Сфотографуй сторінку. AI прочитає текст і запропонує переказ — ти завжди вирішуєш, куди це додати, перш ніж зберегти.
             </p>
             <input
               ref={fileInputRef}
@@ -135,6 +138,9 @@ export default function PhotoRecognizeModal({ onClose, onConfirm }) {
             {result?.name && (
               <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 6 }}>
                 Розпізнане ім'я: <strong style={{ color: 'var(--text)' }}>{result.name}</strong>
+                <span style={{ display: 'block', fontSize: 11, marginTop: 2 }}>
+                  Перевір, що ти зараз у картці саме цього персонажа — AI лише читає текст, не вибирає за тебе.
+                </span>
               </div>
             )}
 
@@ -154,6 +160,24 @@ export default function PhotoRecognizeModal({ onClose, onConfirm }) {
                 </p>
               </details>
             )}
+
+            <div className="sec-label">Куди додати</div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+              <button
+                className={targetField === 'description' ? 'tab on' : 'tab'}
+                style={{ border: '1px solid var(--border)', borderRadius: 8, flex: 1 }}
+                onClick={() => setTargetField('description')}
+              >
+                Характеристика
+              </button>
+              <button
+                className={targetField === 'events' ? 'tab on' : 'tab'}
+                style={{ border: '1px solid var(--border)', borderRadius: 8, flex: 1 }}
+                onClick={() => setTargetField('events')}
+              >
+                Події
+              </button>
+            </div>
 
             <div className="sec-label">Текст для додавання (можна редагувати)</div>
             <textarea

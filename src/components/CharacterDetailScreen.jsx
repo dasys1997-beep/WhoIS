@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { colorFor, initials } from './CharactersScreen';
 import PhotoRecognizeModal from './PhotoRecognizeModal';
 
-export default function CharacterDetailScreen({ character, book, onBack, onUpdate }) {
+export default function CharacterDetailScreen({ character, book, onBack, onUpdate, onDelete }) {
   const [noteValue, setNoteValue] = useState(character.freeNote || '');
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const col = colorFor(character.role);
@@ -11,9 +11,11 @@ export default function CharacterDetailScreen({ character, book, onBack, onUpdat
     onUpdate({ freeNote: noteValue });
   }
 
-  function handlePhotoConfirm(text, recognized) {
-    const newDescription = character.description ? character.description + '\n\n' + text : text;
-    const patch = { description: newDescription };
+  function handlePhotoConfirm(text, recognized, targetField) {
+    const field = targetField || 'description';
+    const current = character[field] || '';
+    const updatedText = current ? current + '\n\n' + text : text;
+    const patch = { [field]: updatedText };
 
     // Якщо роль ще не визначена, а AI щось запропонував — підставляємо,
     // але НЕ перезаписуємо роль, яку користувач уже встановив раніше.
@@ -25,6 +27,11 @@ export default function CharacterDetailScreen({ character, book, onBack, onUpdat
     setShowPhotoModal(false);
   }
 
+  function handleDelete() {
+    const confirmed = window.confirm(`Видалити персонажа "${character.name}"? Це незворотно.`);
+    if (confirmed) onDelete();
+  }
+
   return (
     <div className="screen">
       <div className="topbar">
@@ -32,7 +39,9 @@ export default function CharacterDetailScreen({ character, book, onBack, onUpdat
           <i className="ti ti-arrow-left" aria-hidden="true"></i> Назад
         </button>
         <span className="topbar-title">{character.name}</span>
-        <span style={{ width: 20 }}></span>
+        <button className="icon-btn" onClick={handleDelete} aria-label="Видалити персонажа">
+          <i className="ti ti-trash" aria-hidden="true"></i>
+        </button>
       </div>
 
       <div className="body">
@@ -78,6 +87,15 @@ export default function CharacterDetailScreen({ character, book, onBack, onUpdat
               </span>
             ))}
           </div>
+        )}
+
+        <div className="sec-label">Події</div>
+        {character.events ? (
+          <p className="desc-text">{character.events}</p>
+        ) : (
+          <p className="desc-text" style={{ color: 'var(--muted)' }}>
+            Що персонаж робив чи де був — записуй сюди окремо від характеристики.
+          </p>
         )}
 
         <div className="sec-label">Нотатки</div>
