@@ -12,6 +12,7 @@ import { getTelegramUserId } from './telegram';
 
 export function useBookData() {
   const [data, setData] = useState({ books: [], characters: [], bookNotes: {} });
+  const [theme, setThemeState] = useState(null); // null = ще не завантажено з бази
   const [loading, setLoading] = useState(true);
   const userId = getTelegramUserId();
   const configured = isSupabaseConfigured();
@@ -23,10 +24,11 @@ export function useBookData() {
     }
     setLoading(true);
 
-    const [booksRes, charsRes, notesRes] = await Promise.all([
+    const [booksRes, charsRes, notesRes, settingsRes] = await Promise.all([
       supabase.from('books').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('characters').select('*').eq('user_id', userId),
       supabase.from('book_notes').select('*').eq('user_id', userId),
+      supabase.from('user_settings').select('*').eq('user_id', userId).maybeSingle(),
     ]);
 
     const books = (booksRes.data || []).map((b) => ({
@@ -36,6 +38,9 @@ export function useBookData() {
       currentChapter: b.current_chapter,
       totalChapters: b.total_chapters,
       status: b.status,
+      rating: b.rating ?? null,
+      review: b.review || '',
+      archivedAt: b.archived_at ? new Date(b.archived_at).getTime() : null,
       createdAt: new Date(b.created_at).getTime(),
     }));
 
@@ -59,12 +64,30 @@ export function useBookData() {
     });
 
     setData({ books, characters, bookNotes });
+
+    // Якщо в user_settings ще нема рядка (перший запуск) — лишаємо null,
+    // App.jsx підставить DEFAULT_THEME сам, не звертаючись до бази зайвий раз.
+    if (settingsRes.data?.theme) {
+      setThemeState(settingsRes.data.theme);
+    }
+
     setLoading(false);
   }, [userId, configured]);
 
   useEffect(() => {
     reload();
   }, [reload]);
+
+  async function setTheme(themeKey) {
+    setThemeState(themeKey);
+
+    if (!configured) return;
+
+    // upsert: створює рядок при першому виборі теми, оновлює при наступних.
+    await supabase
+      .from('user_settings')
+      .upsert({ user_id: userId, theme: themeKey, updated_at: new Date().toISOString() });
+  }
 
   async function addBook(book) {
     if (!configured) {
@@ -111,9 +134,30 @@ export function useBookData() {
     if ('status' in patch) dbPatch.status = patch.status;
     if ('title' in patch) dbPatch.title = patch.title;
     if ('genre' in patch) dbPatch.genre = patch.genre;
+    if ('rating' in patch) dbPatch.rating = patch.rating;
+    if ('review' in patch) dbPatch.review = patch.review;
+    if ('archivedAt' in patch) {
+      dbPatch.archived_at = patch.archivedAt ? new Date(patch.archivedAt).toISOString() : null;
+    }
 
     await supabase.from('books').update(dbPatch).eq('id', bookId);
     await reload();
+  }
+
+  // Позначає книгу як дочитану: зберігає рейтинг/рецензію і ставить
+  // archivedAt — звідси книга переходить зі списку "читаю" в архів.
+  async function archiveBook(bookId, { rating, review } = {}) {
+    await updateBook(bookId, {
+      status: 'finished',
+      rating: rating ?? null,
+      review: review || '',
+      archivedAt: Date.now(),
+    });
+  }
+
+  // Повертає книгу назад в активне читання (якщо вирішив перечитати).
+  async function unarchiveBook(bookId) {
+    await updateBook(bookId, { status: 'reading', archivedAt: null });
   }
 
   async function addCharacter(bookId, character) {
@@ -266,9 +310,13 @@ export function useBookData() {
     data,
     loading,
     configured,
+    theme,
+    setTheme,
     addBook,
     updateBook,
     deleteBook,
+    archiveBook,
+    unarchiveBook,
     addCharacter,
     updateCharacter,
     deleteCharacter,

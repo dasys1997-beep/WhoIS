@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useSwipeToDelete } from '../useSwipeToDelete';
 
 const ROLE_COLORS = {
   'Головний': { bg: '#E8D8B8', text: '#6B4C1E' },
@@ -22,13 +23,61 @@ function initials(name) {
     .toUpperCase();
 }
 
-function confirmDelete(message, onConfirm) {
-  const tg = window.Telegram?.WebApp;
-  if (tg?.showConfirm) {
-    tg.showConfirm(message, (ok) => { if (ok) onConfirm(); });
-  } else if (window.confirm(message)) {
-    onConfirm();
+function SwipeableCharRow({ character, onOpen, onDelete }) {
+  const col = colorFor(character.role);
+  const { offset, isOpen, close, handleDeleteClick, swipeHandlers, maxSwipe } = useSwipeToDelete(() =>
+    onDelete(character)
+  );
+
+  function handleRowClick() {
+    if (isOpen) {
+      close();
+      return;
+    }
+    onOpen(character.id);
   }
+
+  return (
+    <div className="swipe-row">
+      <div className="swipe-delete-zone" style={{ width: maxSwipe }} onClick={handleDeleteClick}>
+        <i className="ti ti-trash" aria-hidden="true"></i>
+      </div>
+      <div
+        className="char-item"
+        style={{ transform: `translateX(${offset}px)` }}
+        onClick={handleRowClick}
+        {...swipeHandlers}
+      >
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div className="av" style={{ background: col.bg, color: col.text }}>
+            {initials(character.name)}
+          </div>
+          <span
+            style={{
+              position: 'absolute',
+              bottom: -1,
+              right: -1,
+              width: 11,
+              height: 11,
+              borderRadius: '50%',
+              background: character.isActive === false ? '#9A9A9A' : '#3B9E4F',
+              border: '2px solid var(--card)',
+            }}
+          />
+        </div>
+        <div className="char-info-grow">
+          <div className="ch-name">{character.name}</div>
+          {character.role && (
+            <span className="badge" style={{ background: col.bg, color: col.text }}>
+              {character.role}
+            </span>
+          )}
+        </div>
+        <i className="ti ti-chevron-right chevron" aria-hidden="true"></i>
+        {offset === 0 && <span className="swipe-hint">‹‹</span>}
+      </div>
+    </div>
+  );
 }
 
 export default function CharactersScreen({ book, characters, onBack, onOpenChar, onAddChar, onOpenNotes, onDeleteChar }) {
@@ -42,13 +91,13 @@ export default function CharactersScreen({ book, characters, onBack, onOpenChar,
   const filtered =
     activeRole === 'all' ? characters : characters.filter((c) => c.role === activeRole);
 
+  // Нещодавно додані — спочатку, щоб при великій кількості персонажів
+  // не доводилось шукати того кого щойно записав.
   const sorted = [...filtered].sort((a, b) => b.createdAt - a.createdAt);
 
-  function handleDelete(e, character) {
-    e.stopPropagation();
-    confirmDelete(`Видалити "${character.name}"?`, () => {
-      if (onDeleteChar) onDeleteChar(character.id);
-    });
+  function handleDelete(character) {
+    const confirmed = window.confirm(`Видалити персонажа "${character.name}"? Це незворотно.`);
+    if (confirmed) onDeleteChar(character.id);
   }
 
   return (
@@ -91,52 +140,9 @@ export default function CharactersScreen({ book, characters, onBack, onOpenChar,
           </div>
         )}
 
-        {sorted.map((c) => {
-          const col = colorFor(c.role);
-          return (
-            <div className="char-item" key={c.id} style={{ display: 'flex', alignItems: 'center' }}>
-              <div
-                style={{ display: 'flex', alignItems: 'center', gap: 11, flex: 1, minWidth: 0, cursor: 'pointer' }}
-                onClick={() => onOpenChar(c.id)}
-              >
-                <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <div className="av" style={{ background: col.bg, color: col.text }}>
-                    {initials(c.name)}
-                  </div>
-                  <span
-                    style={{
-                      position: 'absolute',
-                      bottom: -1,
-                      right: -1,
-                      width: 11,
-                      height: 11,
-                      borderRadius: '50%',
-                      background: c.isActive === false ? '#9A9A9A' : '#3B9E4F',
-                      border: '2px solid var(--card)',
-                    }}
-                  />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="ch-name">{c.name}</div>
-                  {c.role && (
-                    <span className="badge" style={{ background: col.bg, color: col.text }}>
-                      {c.role}
-                    </span>
-                  )}
-                </div>
-                <i className="ti ti-chevron-right" style={{ fontSize: 15, color: 'var(--muted)', flexShrink: 0 }} aria-hidden="true"></i>
-              </div>
-              <button
-                className="icon-btn"
-                style={{ color: '#DC2626', marginLeft: 4, flexShrink: 0 }}
-                onClick={(e) => handleDelete(e, c)}
-                aria-label="Видалити персонажа"
-              >
-                <i className="ti ti-trash" aria-hidden="true"></i>
-              </button>
-            </div>
-          );
-        })}
+        {sorted.map((c) => (
+          <SwipeableCharRow key={c.id} character={c} onOpen={onOpenChar} onDelete={handleDelete} />
+        ))}
 
         <div className="fab-wrap">
           <button className="btn-primary" onClick={onAddChar}>

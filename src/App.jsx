@@ -9,19 +9,23 @@ import AddCharacterScreen from './components/AddCharacterScreen';
 import BookNotesScreen from './components/BookNotesScreen';
 import SettingsScreen from './components/SettingsScreen';
 import AddBookScreen from './components/AddBookScreen';
+import ArchiveScreen from './components/ArchiveScreen';
 import BottomNav from './components/BottomNav';
 import './App.css';
 
 export default function App() {
-  const [theme, setTheme] = useState(DEFAULT_THEME);
   const [screen, setScreen] = useState({ name: 'books' });
   const {
     data,
     loading,
     configured,
+    theme,
+    setTheme,
     addBook,
     updateBook,
     deleteBook,
+    archiveBook,
+    unarchiveBook,
     addCharacter,
     updateCharacter,
     deleteCharacter,
@@ -31,9 +35,14 @@ export default function App() {
     setBookNote,
   } = useBookData();
 
+  // theme з хука може бути null поки ще не завантажилась з бази (перший
+  // рендер) — у цьому випадку показуємо DEFAULT_THEME, щоб не блимати
+  // незаданими CSS-змінними до завершення запиту.
+  const activeTheme = theme || DEFAULT_THEME;
+
   useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
+    applyTheme(activeTheme);
+  }, [activeTheme]);
 
   useEffect(() => {
     initTelegramApp();
@@ -82,10 +91,28 @@ export default function App() {
 
         {screen.name === 'books' && (
           <BooksScreen
-            books={data.books}
+            books={data.books.filter((b) => !b.archivedAt)}
             onOpenBook={(bookId) => navigate('characters', { bookId })}
             onAddBook={() => navigate('addBook')}
             onSettings={() => navigate('settings')}
+            onOpenArchive={() => navigate('archive')}
+            onDeleteBook={async (bookId) => {
+              await deleteBook(bookId);
+            }}
+            onArchiveBook={async (bookId, info) => {
+              await archiveBook(bookId, info);
+            }}
+          />
+        )}
+
+        {screen.name === 'archive' && (
+          <ArchiveScreen
+            books={data.books.filter((b) => b.archivedAt)}
+            onBack={() => navigate('books')}
+            onOpenBook={(bookId) => navigate('characters', { bookId })}
+            onUnarchive={async (bookId) => {
+              await unarchiveBook(bookId);
+            }}
             onDeleteBook={async (bookId) => {
               await deleteBook(bookId);
             }}
@@ -162,7 +189,7 @@ export default function App() {
 
         {screen.name === 'settings' && (
           <SettingsScreen
-            theme={theme}
+            theme={activeTheme}
             themes={THEMES}
             onSetTheme={setTheme}
             onBack={() => navigate('books')}

@@ -10,6 +10,9 @@ create table books (
   current_chapter int default 0,
   total_chapters int default 0,
   status text default 'reading',      -- 'reading' | 'finished'
+  rating int,                         -- 1-10, заповнюється при перенесенні в архів
+  review text default '',             -- особиста рецензія, заповнюється при архівації
+  archived_at timestamptz,            -- коли позначено "дочитано", null = ще читається
   created_at timestamptz default now()
 );
 
@@ -37,11 +40,19 @@ create table book_notes (
   updated_at timestamptz default now()
 );
 
+-- Налаштування користувача (тема інтерфейсу, зберігається між сесіями)
+create table user_settings (
+  user_id text primary key,
+  theme text default 'parchment',
+  updated_at timestamptz default now()
+);
+
 -- Увімкнути Row Level Security — без цього хто завгодно з anon-ключем
 -- міг би читати/писати чужі дані.
 alter table books enable row level security;
 alter table characters enable row level security;
 alter table book_notes enable row level security;
+alter table user_settings enable row level security;
 
 -- Політики: користувач бачить і змінює тільки рядки зі своїм user_id.
 -- user_id передається з фронтенду (з Telegram Web App initData) через
@@ -67,6 +78,11 @@ create policy "users manage own characters"
 
 create policy "users manage own book_notes"
   on book_notes for all
+  using (true)
+  with check (true);
+
+create policy "users manage own settings"
+  on user_settings for all
   using (true)
   with check (true);
 

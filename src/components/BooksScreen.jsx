@@ -1,17 +1,58 @@
 import { useState, useMemo } from 'react';
 import { GENRES } from '../initialData';
+import { useSwipeToDelete } from '../useSwipeToDelete';
 
-function confirmDelete(message, onConfirm) {
-  const tg = window.Telegram?.WebApp;
-  if (tg?.showConfirm) {
-    tg.showConfirm(message, (ok) => { if (ok) onConfirm(); });
-  } else if (window.confirm(message)) {
-    onConfirm();
+function SwipeableBookRow({ book, spineColor, onOpen, onDelete, onArchive }) {
+  const { offset, isOpen, close, handleDeleteClick, swipeHandlers, maxSwipe } = useSwipeToDelete(() =>
+    onDelete(book)
+  );
+
+  function handleRowClick() {
+    if (isOpen) {
+      close();
+      return;
+    }
+    onOpen(book.id);
   }
+
+  return (
+    <div className="swipe-row">
+      <div className="swipe-delete-zone" style={{ width: maxSwipe }} onClick={handleDeleteClick}>
+        <i className="ti ti-trash" aria-hidden="true"></i>
+      </div>
+      <div
+        className="book-card"
+        style={{ transform: `translateX(${offset}px)` }}
+        onClick={handleRowClick}
+        {...swipeHandlers}
+      >
+        <div className="book-spine" style={{ background: spineColor }}></div>
+        <div className="book-info">
+          <div className="book-title">{book.title}</div>
+          <div className="book-meta">
+            {book.genre}
+            {book.totalChapters ? ` · розділ ${book.currentChapter}/${book.totalChapters}` : ''}
+          </div>
+        </div>
+        <button
+          className="btn-secondary"
+          style={{ fontSize: 11, padding: '5px 10px', flexShrink: 0 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onArchive(book);
+          }}
+        >
+          Дочитано
+        </button>
+        {offset === 0 && <span className="swipe-hint">‹‹</span>}
+      </div>
+    </div>
+  );
 }
 
-export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings, onDeleteBook }) {
+export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings, onOpenArchive, onDeleteBook, onArchiveBook }) {
   const [activeGenre, setActiveGenre] = useState('all');
+  const [archivingBook, setArchivingBook] = useState(null); // книга, для якої зараз показуємо форму рецензії
 
   const usedGenres = useMemo(() => {
     const set = new Set(books.map((b) => b.genre));
@@ -30,20 +71,25 @@ export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings, 
 
   const spineColors = ['#C8A97E', '#A07850', '#5DCAA5', '#9F7DD1', '#D4956A', '#7B8FE8'];
 
-  function handleDelete(e, book) {
-    e.stopPropagation();
-    confirmDelete(`Видалити книгу "${book.title}"?\nУсі персонажі та нотатки зникнуть.`, () => {
-      if (onDeleteBook) onDeleteBook(book.id);
-    });
+  function handleDelete(book) {
+    const confirmed = window.confirm(
+      `Видалити книгу "${book.title}"? Усі її персонажі та нотатки видаляться назавжди.`
+    );
+    if (confirmed) onDeleteBook(book.id);
   }
 
   return (
     <div className="screen">
       <div className="topbar">
         <span className="topbar-title">Мої книги</span>
-        <button className="icon-btn" onClick={onSettings} aria-label="Налаштування">
-          <i className="ti ti-settings" aria-hidden="true"></i>
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="icon-btn" onClick={onOpenArchive} aria-label="Архів">
+            <i className="ti ti-archive" aria-hidden="true"></i>
+          </button>
+          <button className="icon-btn" onClick={onSettings} aria-label="Налаштування">
+            <i className="ti ti-settings" aria-hidden="true"></i>
+          </button>
+        </div>
       </div>
 
       <div className="tabs">
@@ -78,33 +124,14 @@ export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings, 
           <div key={genre}>
             {activeGenre === 'all' && <div className="genre-sep">{genre.toUpperCase()}</div>}
             {list.map((book, i) => (
-              <div className="book-card" key={book.id} style={{ display: 'flex', alignItems: 'center' }}>
-                <div
-                  style={{ display: 'flex', alignItems: 'center', gap: 11, flex: 1, minWidth: 0, cursor: 'pointer' }}
-                  onClick={() => onOpenBook(book.id)}
-                >
-                  <div
-                    className="book-spine"
-                    style={{ background: spineColors[i % spineColors.length] }}
-                  ></div>
-                  <div className="book-info">
-                    <div className="book-title">{book.title}</div>
-                    <div className="book-meta">
-                      {book.genre}
-                      {book.totalChapters ? ` · розділ ${book.currentChapter}/${book.totalChapters}` : ''}
-                    </div>
-                  </div>
-                  <i className="ti ti-chevron-right chevron" aria-hidden="true"></i>
-                </div>
-                <button
-                  className="icon-btn"
-                  style={{ color: '#DC2626', marginLeft: 4, flexShrink: 0 }}
-                  onClick={(e) => handleDelete(e, book)}
-                  aria-label="Видалити книгу"
-                >
-                  <i className="ti ti-trash" aria-hidden="true"></i>
-                </button>
-              </div>
+              <SwipeableBookRow
+                key={book.id}
+                book={book}
+                spineColor={spineColors[i % spineColors.length]}
+                onOpen={onOpenBook}
+                onDelete={handleDelete}
+                onArchive={(b) => setArchivingBook(b)}
+              />
             ))}
           </div>
         ))}
@@ -112,6 +139,103 @@ export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings, 
         <div className="fab-wrap">
           <button className="btn-primary" onClick={onAddBook}>
             <i className="ti ti-plus" aria-hidden="true"></i> Додати книгу
+          </button>
+        </div>
+      </div>
+
+      {archivingBook && (
+        <ArchiveReviewModal
+          book={archivingBook}
+          onClose={() => setArchivingBook(null)}
+          onConfirm={(info) => {
+            onArchiveBook(archivingBook.id, info);
+            setArchivingBook(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ArchiveReviewModal({ book, onClose, onConfirm }) {
+  const [rating, setRating] = useState(null);
+  const [review, setReview] = useState('');
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.45)',
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        zIndex: 1000,
+      }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        style={{
+          background: 'var(--card)',
+          borderRadius: '18px 18px 0 0',
+          padding: 18,
+          width: '100%',
+          maxWidth: 480,
+          maxHeight: '85vh',
+          overflowY: 'auto',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
+            Дочитано: {book.title}
+          </span>
+          <button className="icon-btn" onClick={onClose}>
+            <i className="ti ti-x" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <p className="desc-text" style={{ color: 'var(--muted)', marginBottom: 12 }}>
+          Книга переходить в архів. Можеш оцінити і написати рецензію зараз, або пропустити — повернутись можна пізніше з картки книги в архіві.
+        </p>
+
+        <div className="sec-label">Оцінка (1-10)</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+            <button
+              key={n}
+              onClick={() => setRating(n)}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                border: '1px solid var(--border)',
+                background: rating === n ? 'var(--accent)' : 'var(--input)',
+                color: rating === n ? 'var(--accent-text)' : 'var(--text)',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+
+        <div className="sec-label">Рецензія (необов'язково)</div>
+        <textarea
+          className="note-box"
+          style={{ minHeight: 100 }}
+          placeholder="Що думаєш про книгу, чи вгадав фінал, що сподобалось..."
+          value={review}
+          onChange={(e) => setReview(e.target.value)}
+        />
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <button className="btn-secondary" style={{ flex: 1 }} onClick={() => onConfirm({ rating: null, review: '' })}>
+            Пропустити
+          </button>
+          <button className="btn-primary" style={{ flex: 1 }} onClick={() => onConfirm({ rating, review })}>
+            В архів
           </button>
         </div>
       </div>

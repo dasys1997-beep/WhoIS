@@ -10,7 +10,7 @@ export default function BottomNav({ active, onNavigate }) {
 
   // Підсвічуємо "Книги" також коли користувач всередині книги/персонажа —
   // бо логічно це все ще "в межах" розділу книг.
-  const booksRelated = ['books', 'addBook', 'characters', 'addChar', 'charDetail', 'bookNotes'];
+  const booksRelated = ['books', 'addBook', 'characters', 'addChar', 'charDetail', 'bookNotes', 'archive'];
   const activeKey = booksRelated.includes(active) ? 'books' : active;
 
   return (
