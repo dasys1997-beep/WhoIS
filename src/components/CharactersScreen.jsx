@@ -104,7 +104,7 @@ export default function CharactersScreen({ book, characters, onBack, onOpenChar,
                   }}
                 />
               </div>
-              <div>
+              <div className="char-info-grow">
                 <div className="ch-name">{c.name}</div>
                 {c.role && (
                   <span className="badge" style={{ background: col.bg, color: col.text }}>

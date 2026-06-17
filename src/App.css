@@ -186,7 +186,8 @@ html, body, #root {
   margin-top: 2px;
 }
 
-.chevron { margin-left: auto; font-size: 15px; color: var(--muted); flex-shrink: 0; }
+.chevron { font-size: 15px; color: var(--muted); flex-shrink: 0; }
+.char-info-grow { flex: 1; min-width: 0; }
 
 .av {
   width: 38px;
