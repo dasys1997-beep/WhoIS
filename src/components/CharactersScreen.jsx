@@ -33,14 +33,12 @@ export default function CharactersScreen({ book, characters, onBack, onOpenChar,
   const filtered =
     activeRole === 'all' ? characters : characters.filter((c) => c.role === activeRole);
 
-  // Нещодавно додані — спочатку, щоб при великій кількості персонажів
-  // не доводилось шукати того кого щойно записав.
   const sorted = [...filtered].sort((a, b) => b.createdAt - a.createdAt);
 
   function handleDelete(e, character) {
     e.stopPropagation();
     const confirmed = window.confirm(`Видалити персонажа "${character.name}"? Це незворотно.`);
-    if (confirmed) onDeleteChar(character.id);
+    if (confirmed && onDeleteChar) onDeleteChar(character.id);
   }
 
   return (
@@ -86,38 +84,54 @@ export default function CharactersScreen({ book, characters, onBack, onOpenChar,
         {sorted.map((c) => {
           const col = colorFor(c.role);
           return (
-            <div className="char-item" key={c.id} onClick={() => onOpenChar(c.id)}>
-              <div style={{ position: 'relative', flexShrink: 0 }}>
-                <div className="av" style={{ background: col.bg, color: col.text }}>
-                  {initials(c.name)}
+            <div className="char-item" key={c.id} style={{ position: 'relative' }}>
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: 11, flex: 1, minWidth: 0 }}
+                onClick={() => onOpenChar(c.id)}
+              >
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <div className="av" style={{ background: col.bg, color: col.text }}>
+                    {initials(c.name)}
+                  </div>
+                  <span
+                    style={{
+                      position: 'absolute',
+                      bottom: -1,
+                      right: -1,
+                      width: 11,
+                      height: 11,
+                      borderRadius: '50%',
+                      background: c.isActive === false ? '#9A9A9A' : '#3B9E4F',
+                      border: '2px solid var(--card)',
+                    }}
+                  />
                 </div>
-                <span
-                  style={{
-                    position: 'absolute',
-                    bottom: -1,
-                    right: -1,
-                    width: 11,
-                    height: 11,
-                    borderRadius: '50%',
-                    background: c.isActive === false ? '#9A9A9A' : '#3B9E4F',
-                    border: '2px solid var(--card)',
-                  }}
-                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="ch-name">{c.name}</div>
+                  {c.role && (
+                    <span className="badge" style={{ background: col.bg, color: col.text }}>
+                      {c.role}
+                    </span>
+                  )}
+                </div>
+                <i className="ti ti-chevron-right" style={{ fontSize: 15, color: 'var(--muted)', flexShrink: 0 }} aria-hidden="true"></i>
               </div>
-              <div className="char-info-grow">
-                <div className="ch-name">{c.name}</div>
-                {c.role && (
-                  <span className="badge" style={{ background: col.bg, color: col.text }}>
-                    {c.role}
-                  </span>
-                )}
-              </div>
-              <i className="ti ti-chevron-right chevron" aria-hidden="true"></i>
               <button
-                className="icon-btn"
-                style={{ fontSize: 16, marginLeft: 2 }}
                 onClick={(e) => handleDelete(e, c)}
                 aria-label="Видалити персонажа"
+                style={{
+                  flexShrink: 0,
+                  marginLeft: 6,
+                  padding: '6px 8px',
+                  background: '#FEE2E2',
+                  border: '1px solid #FECACA',
+                  borderRadius: 8,
+                  color: '#DC2626',
+                  cursor: 'pointer',
+                  fontSize: 15,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
               >
                 <i className="ti ti-trash" aria-hidden="true"></i>
               </button>
