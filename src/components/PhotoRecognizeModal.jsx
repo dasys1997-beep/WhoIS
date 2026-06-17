@@ -144,6 +144,17 @@ export default function PhotoRecognizeModal({ onClose, onConfirm }) {
               </div>
             )}
 
+            {result?.rawText && result?.description && result.rawText !== result.description && (
+              <details style={{ marginBottom: 10 }}>
+                <summary style={{ fontSize: 12, color: 'var(--muted)', cursor: 'pointer' }}>
+                  Показати оригінальний розпізнаний текст
+                </summary>
+                <p className="desc-text" style={{ color: 'var(--muted)', fontSize: 12, marginTop: 6 }}>
+                  {result.rawText}
+                </p>
+              </details>
+            )}
+
             <div className="sec-label">Текст для додавання (можна редагувати)</div>
             <textarea
               className="note-box"
