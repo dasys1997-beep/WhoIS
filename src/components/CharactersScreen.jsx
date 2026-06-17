@@ -87,8 +87,22 @@ export default function CharactersScreen({ book, characters, onBack, onOpenChar,
           const col = colorFor(c.role);
           return (
             <div className="char-item" key={c.id} onClick={() => onOpenChar(c.id)}>
-              <div className="av" style={{ background: col.bg, color: col.text }}>
-                {initials(c.name)}
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div className="av" style={{ background: col.bg, color: col.text }}>
+                  {initials(c.name)}
+                </div>
+                <span
+                  style={{
+                    position: 'absolute',
+                    bottom: -1,
+                    right: -1,
+                    width: 11,
+                    height: 11,
+                    borderRadius: '50%',
+                    background: c.isActive === false ? '#9A9A9A' : '#3B9E4F',
+                    border: '2px solid var(--card)',
+                  }}
+                />
               </div>
               <div>
                 <div className="ch-name">{c.name}</div>

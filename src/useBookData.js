@@ -48,6 +48,8 @@ export function useBookData() {
       events: c.events || '',
       tags: c.tags || [],
       freeNote: c.free_note || '',
+      mentionCount: c.mention_count || 0,
+      isActive: c.is_active !== false, // за замовчуванням true, якщо null/undefined
       createdAt: new Date(c.created_at).getTime(),
     }));
 
@@ -130,6 +132,8 @@ export function useBookData() {
             events: character.events || '',
             tags: character.tags || [],
             freeNote: '',
+            mentionCount: 0,
+            isActive: true,
             createdAt: Date.now(),
           },
         ],
@@ -176,15 +180,44 @@ export function useBookData() {
     if ('role' in patch) dbPatch.role = patch.role;
     if ('tags' in patch) dbPatch.tags = patch.tags;
     if ('name' in patch) dbPatch.name = patch.name;
+    if ('mentionCount' in patch) dbPatch.mention_count = patch.mentionCount;
+    if ('isActive' in patch) dbPatch.is_active = patch.isActive;
 
     await supabase.from('characters').update(dbPatch).eq('id', charId);
     await reload();
   }
 
-  async function appendToCharacter(charId, text) {
+  async function appendToCharacter(charId, text, field = 'description') {
     const current = data.characters.find((c) => c.id === charId);
-    const newDescription = current?.description ? current.description + '\n\n' + text : text;
-    await updateCharacter(charId, { description: newDescription });
+    const existingValue = current?.[field] || '';
+    const updatedValue = existingValue ? existingValue + '\n\n' + text : text;
+    await updateCharacter(charId, { [field]: updatedValue });
+  }
+
+  // Викликається кожного разу коли користувач відкриває картку персонажа —
+  // лічильник "скільки разів я сюди заходив" як непрямий індикатор того,
+  // наскільки часто персонаж зринає в історії.
+  async function incrementMention(charId) {
+    const current = data.characters.find((c) => c.id === charId);
+    if (!current) return;
+    const newCount = (current.mentionCount || 0) + 1;
+
+    // Локальне оновлення без повного reload — це гаряча дія при кожному
+    // відкритті картки, зайвий round-trip до бази тут не потрібен.
+    setData((d) => ({
+      ...d,
+      characters: d.characters.map((c) => (c.id === charId ? { ...c, mentionCount: newCount } : c)),
+    }));
+
+    if (configured) {
+      await supabase.from('characters').update({ mention_count: newCount }).eq('id', charId);
+    }
+  }
+
+  async function toggleActive(charId) {
+    const current = data.characters.find((c) => c.id === charId);
+    if (!current) return;
+    await updateCharacter(charId, { isActive: !current.isActive });
   }
 
   async function deleteBook(bookId) {
@@ -240,6 +273,8 @@ export function useBookData() {
     updateCharacter,
     deleteCharacter,
     appendToCharacter,
+    incrementMention,
+    toggleActive,
     setBookNote,
   };
 }

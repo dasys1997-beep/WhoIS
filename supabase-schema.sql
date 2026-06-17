@@ -24,6 +24,8 @@ create table characters (
   events text default '',             -- окрема секція "що персонаж робив/де був"
   tags text[] default '{}',
   free_note text default '',
+  mention_count int default 0,        -- лічильник: скільки разів відкривав картку
+  is_active boolean default true,     -- true = зелений (активний), false = сірий (вибув/неактивний)
   created_at timestamptz default now()
 );
 

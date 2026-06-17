@@ -26,6 +26,8 @@ export default function App() {
     updateCharacter,
     deleteCharacter,
     appendToCharacter,
+    incrementMention,
+    toggleActive,
     setBookNote,
   } = useBookData();
 
@@ -38,6 +40,9 @@ export default function App() {
   }, []);
 
   function navigate(name, params = {}) {
+    if (name === 'charDetail' && params.charId) {
+      incrementMention(params.charId);
+    }
     setScreen({ name, ...params });
   }
 
@@ -131,8 +136,12 @@ export default function App() {
           <CharacterDetailScreen
             character={currentChar}
             book={currentBook}
+            allCharactersInBook={data.characters.filter((c) => c.bookId === currentChar.bookId)}
             onBack={() => navigate('characters', { bookId: currentChar.bookId })}
             onUpdate={(patch) => updateCharacter(currentChar.id, patch)}
+            onAppendField={(field, text) => appendToCharacter(currentChar.id, text, field)}
+            onToggleActive={() => toggleActive(currentChar.id)}
+            onCreateCharacter={(name) => addCharacter(currentChar.bookId, { name, role: null })}
             onDelete={async () => {
               const bookId = currentChar.bookId;
               await deleteCharacter(currentChar.id);
