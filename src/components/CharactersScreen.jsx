@@ -22,6 +22,20 @@ function initials(name) {
     .toUpperCase();
 }
 
+const deleteStyle = {
+  flexShrink: 0,
+  marginLeft: 4,
+  padding: '6px',
+  background: 'none',
+  border: 'none',
+  borderRadius: 8,
+  color: '#DC2626',
+  cursor: 'pointer',
+  fontSize: 18,
+  display: 'flex',
+  alignItems: 'center',
+};
+
 export default function CharactersScreen({ book, characters, onBack, onOpenChar, onAddChar, onOpenNotes, onDeleteChar }) {
   const [activeRole, setActiveRole] = useState('all');
 
@@ -84,9 +98,9 @@ export default function CharactersScreen({ book, characters, onBack, onOpenChar,
         {sorted.map((c) => {
           const col = colorFor(c.role);
           return (
-            <div className="char-item" key={c.id} style={{ position: 'relative' }}>
+            <div className="char-item" key={c.id} style={{ display: 'flex', alignItems: 'center' }}>
               <div
-                style={{ display: 'flex', alignItems: 'center', gap: 11, flex: 1, minWidth: 0 }}
+                style={{ display: 'flex', alignItems: 'center', gap: 11, flex: 1, minWidth: 0, cursor: 'pointer' }}
                 onClick={() => onOpenChar(c.id)}
               >
                 <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -117,21 +131,9 @@ export default function CharactersScreen({ book, characters, onBack, onOpenChar,
                 <i className="ti ti-chevron-right" style={{ fontSize: 15, color: 'var(--muted)', flexShrink: 0 }} aria-hidden="true"></i>
               </div>
               <button
+                style={deleteStyle}
                 onClick={(e) => handleDelete(e, c)}
                 aria-label="Видалити персонажа"
-                style={{
-                  flexShrink: 0,
-                  marginLeft: 6,
-                  padding: '6px 8px',
-                  background: '#FEE2E2',
-                  border: '1px solid #FECACA',
-                  borderRadius: 8,
-                  color: '#DC2626',
-                  cursor: 'pointer',
-                  fontSize: 15,
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
               >
                 <i className="ti ti-trash" aria-hidden="true"></i>
               </button>

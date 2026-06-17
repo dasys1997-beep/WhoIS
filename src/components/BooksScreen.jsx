@@ -1,6 +1,20 @@
 import { useState, useMemo } from 'react';
 import { GENRES } from '../initialData';
 
+const deleteStyle = {
+  flexShrink: 0,
+  marginLeft: 4,
+  padding: '6px',
+  background: 'none',
+  border: 'none',
+  borderRadius: 8,
+  color: '#DC2626',
+  cursor: 'pointer',
+  fontSize: 18,
+  display: 'flex',
+  alignItems: 'center',
+};
+
 export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings, onDeleteBook }) {
   const [activeGenre, setActiveGenre] = useState('all');
 
@@ -26,7 +40,7 @@ export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings, 
     const confirmed = window.confirm(
       `Видалити книгу "${book.title}"? Усі її персонажі та нотатки видаляться назавжди.`
     );
-    if (confirmed) onDeleteBook(book.id);
+    if (confirmed && onDeleteBook) onDeleteBook(book.id);
   }
 
   return (
@@ -70,22 +84,26 @@ export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings, 
           <div key={genre}>
             {activeGenre === 'all' && <div className="genre-sep">{genre.toUpperCase()}</div>}
             {list.map((book, i) => (
-              <div className="book-card" key={book.id} onClick={() => onOpenBook(book.id)}>
+              <div className="book-card" key={book.id} style={{ display: 'flex', alignItems: 'center' }}>
                 <div
-                  className="book-spine"
-                  style={{ background: spineColors[i % spineColors.length] }}
-                ></div>
-                <div className="book-info">
-                  <div className="book-title">{book.title}</div>
-                  <div className="book-meta">
-                    {book.genre}
-                    {book.totalChapters ? ` · розділ ${book.currentChapter}/${book.totalChapters}` : ''}
+                  style={{ display: 'flex', alignItems: 'center', gap: 11, flex: 1, minWidth: 0, cursor: 'pointer' }}
+                  onClick={() => onOpenBook(book.id)}
+                >
+                  <div
+                    className="book-spine"
+                    style={{ background: spineColors[i % spineColors.length] }}
+                  ></div>
+                  <div className="book-info">
+                    <div className="book-title">{book.title}</div>
+                    <div className="book-meta">
+                      {book.genre}
+                      {book.totalChapters ? ` · розділ ${book.currentChapter}/${book.totalChapters}` : ''}
+                    </div>
                   </div>
+                  <i className="ti ti-chevron-right chevron" aria-hidden="true"></i>
                 </div>
-                <i className="ti ti-chevron-right chevron" aria-hidden="true"></i>
                 <button
-                  className="icon-btn"
-                  style={{ fontSize: 16, marginLeft: 2 }}
+                  style={deleteStyle}
                   onClick={(e) => handleDelete(e, book)}
                   aria-label="Видалити книгу"
                 >
