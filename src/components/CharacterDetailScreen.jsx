@@ -1,12 +1,28 @@
 import { useState } from 'react';
 import { colorFor, initials } from './CharactersScreen';
+import PhotoRecognizeModal from './PhotoRecognizeModal';
 
 export default function CharacterDetailScreen({ character, book, onBack, onUpdate }) {
   const [noteValue, setNoteValue] = useState(character.freeNote || '');
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
   const col = colorFor(character.role);
 
   function saveNote() {
     onUpdate({ freeNote: noteValue });
+  }
+
+  function handlePhotoConfirm(text, recognized) {
+    const newDescription = character.description ? character.description + '\n\n' + text : text;
+    const patch = { description: newDescription };
+
+    // Якщо роль ще не визначена, а AI щось запропонував — підставляємо,
+    // але НЕ перезаписуємо роль, яку користувач уже встановив раніше.
+    if (!character.role && recognized?.suggestedRole) {
+      patch.role = recognized.suggestedRole;
+    }
+
+    onUpdate(patch);
+    setShowPhotoModal(false);
   }
 
   return (
@@ -50,7 +66,7 @@ export default function CharacterDetailScreen({ character, book, onBack, onUpdat
           <p className="desc-text">{character.description}</p>
         ) : (
           <p className="desc-text" style={{ color: 'var(--muted)' }}>
-            Опису ще немає. Додай через "Додати до існуючого" в меню персонажів.
+            Опису ще немає. Додай текстом або фото нижче.
           </p>
         )}
 
@@ -74,11 +90,18 @@ export default function CharacterDetailScreen({ character, book, onBack, onUpdat
         />
 
         <div className="sec-label">Фото сторінки</div>
-        <div className="photo-btn" title="У реальному боті: надсилаєш фото в Telegram-чат, AI читає текст і пропонує додати">
+        <div className="photo-btn" onClick={() => setShowPhotoModal(true)}>
           <i className="ti ti-camera" aria-hidden="true"></i>
-          Надіслати фото боту — AI заповнить картку
+          Сфотографувати — AI доповнить картку
         </div>
       </div>
+
+      {showPhotoModal && (
+        <PhotoRecognizeModal
+          onClose={() => setShowPhotoModal(false)}
+          onConfirm={handlePhotoConfirm}
+        />
+      )}
     </div>
   );
 }

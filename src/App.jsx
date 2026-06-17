@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { THEMES, DEFAULT_THEME, applyTheme } from './themes';
-import { createInitialData } from './initialData';
+import { useBookData } from './useBookData';
+import { initTelegramApp } from './telegram';
 import BooksScreen from './components/BooksScreen';
 import CharactersScreen from './components/CharactersScreen';
 import CharacterDetailScreen from './components/CharacterDetailScreen';
@@ -13,93 +14,65 @@ import './App.css';
 
 export default function App() {
   const [theme, setTheme] = useState(DEFAULT_THEME);
-  const [data, setData] = useState(createInitialData);
   const [screen, setScreen] = useState({ name: 'books' });
+  const {
+    data,
+    loading,
+    configured,
+    addBook,
+    updateBook,
+    addCharacter,
+    updateCharacter,
+    appendToCharacter,
+    setBookNote,
+  } = useBookData();
 
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
 
+  useEffect(() => {
+    initTelegramApp();
+  }, []);
+
   function navigate(name, params = {}) {
     setScreen({ name, ...params });
-  }
-
-  function addBook(book) {
-    const id = 'b' + Date.now();
-    setData((d) => ({
-      ...d,
-      books: [
-        ...d.books,
-        {
-          ...book,
-          id,
-          currentChapter: 0,
-          totalChapters: book.totalChapters || 0,
-          status: 'reading',
-          createdAt: Date.now(),
-        },
-      ],
-    }));
-    navigate('characters', { bookId: id });
-  }
-
-  function updateBook(bookId, patch) {
-    setData((d) => ({
-      ...d,
-      books: d.books.map((b) => (b.id === bookId ? { ...b, ...patch } : b)),
-    }));
-  }
-
-  function addCharacter(bookId, character) {
-    const id = 'c' + Date.now();
-    setData((d) => ({
-      ...d,
-      characters: [
-        ...d.characters,
-        {
-          id,
-          bookId,
-          name: character.name,
-          role: character.role,
-          description: character.description || '',
-          tags: character.tags || [],
-          events: [],
-          freeNote: '',
-          createdAt: Date.now(),
-        },
-      ],
-    }));
-    return id;
-  }
-
-  function updateCharacter(charId, patch) {
-    setData((d) => ({
-      ...d,
-      characters: d.characters.map((c) => (c.id === charId ? { ...c, ...patch } : c)),
-    }));
-  }
-
-  function appendToCharacter(charId, text) {
-    setData((d) => ({
-      ...d,
-      characters: d.characters.map((c) =>
-        c.id === charId
-          ? { ...c, description: c.description ? c.description + '\n\n' + text : text }
-          : c
-      ),
-    }));
-  }
-
-  function setBookNote(bookId, text) {
-    setData((d) => ({ ...d, bookNotes: { ...d.bookNotes, [bookId]: text } }));
   }
 
   const currentBook = data.books.find((b) => b.id === screen.bookId);
   const currentChar = data.characters.find((c) => c.id === screen.charId);
 
+  if (loading) {
+    return (
+      <div className="app-shell">
+        <div className="phone-frame">
+          <div className="screen">
+            <div className="body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+              <span style={{ color: 'var(--muted)', fontSize: 13 }}>Завантаження...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-shell">
       <div className="phone-frame">
+        {!configured && (
+          <div
+            style={{
+              background: '#F0C4B8',
+              color: '#8B2A1A',
+              fontSize: 11,
+              padding: '6px 14px',
+              textAlign: 'center',
+            }}
+          >
+            База даних не підключена — дані не зберігаються між сесіями
+          </div>
+        )}
+
         {screen.name === 'books' && (
           <BooksScreen
             books={data.books}
@@ -110,7 +83,13 @@ export default function App() {
         )}
 
         {screen.name === 'addBook' && (
-          <AddBookScreen onBack={() => navigate('books')} onSave={addBook} />
+          <AddBookScreen
+            onBack={() => navigate('books')}
+            onSave={async (book) => {
+              const id = await addBook(book);
+              if (id) navigate('characters', { bookId: id });
+            }}
+          />
         )}
 
         {screen.name === 'characters' && currentBook && (
@@ -129,12 +108,12 @@ export default function App() {
             book={currentBook}
             existingCharacters={data.characters.filter((c) => c.bookId === currentBook.id)}
             onBack={() => navigate('characters', { bookId: currentBook.id })}
-            onCreate={(character) => {
-              addCharacter(currentBook.id, character);
+            onCreate={async (character) => {
+              await addCharacter(currentBook.id, character);
               navigate('characters', { bookId: currentBook.id });
             }}
-            onAppendExisting={(charId, text) => {
-              appendToCharacter(charId, text);
+            onAppendExisting={async (charId, text) => {
+              await appendToCharacter(charId, text);
               navigate('charDetail', { bookId: currentBook.id, charId });
             }}
           />
