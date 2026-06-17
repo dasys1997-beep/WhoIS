@@ -7,6 +7,23 @@ import { useState, useRef } from 'react';
 // existingCharacters потрібен щоб користувач міг вибрати кому з уже
 // створених персонажів призначити сегмент, якщо AI розпізнав інше ім'я.
 
+// Запасний захист: навіть якщо AI проігнорує інструкцію в промпті і
+// все одно почне сегмент з імені персонажа ("Ель Пуаро має сіре волосся"),
+// прибираємо це програмно, щоб картка не виглядала з повторюваним ім'ям
+// у кожному рядку характеристики.
+function stripLeadingName(text, name) {
+  if (!text || !name) return text;
+  const trimmedName = name.trim();
+  const escaped = trimmedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Прибираємо ім'я на початку речення, за яким йде дієслово-зв'язка
+  // ("є", "має", "вбив" тощо) — лишаємо тільки те, що йде після імені.
+  const pattern = new RegExp(`^${escaped}\\s+(є|має|вбив|вбила|був|була|стає|стала|виявився|виявилась)\\s+`, 'iu');
+  const stripped = text.replace(pattern, '');
+  if (stripped === text) return text;
+  // Робимо першу літеру великою, бо речення тепер починається з середини.
+  return stripped.charAt(0).toUpperCase() + stripped.slice(1);
+}
+
 export default function VoiceRecordModal({ currentCharacterName, existingCharacters, onClose, onConfirmSegments }) {
   const [stage, setStage] = useState('record'); // record | recording | loading | review | error
   const [segments, setSegments] = useState([]);
@@ -72,7 +89,7 @@ export default function VoiceRecordModal({ currentCharacterName, existingCharact
         // AI не вказав явно іншого).
         const initialSegments = (data.segments || []).map((seg, i) => ({
           id: 'seg-' + i,
-          text: seg.text,
+          text: stripLeadingName(seg.text, currentCharacterName),
           field: seg.field === 'events' ? 'events' : 'description',
           assignedCharacterName: seg.characterName || currentCharacterName,
           mentionedOtherName: seg.mentionedOtherName || null,
