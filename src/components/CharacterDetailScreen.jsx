@@ -3,7 +3,9 @@ import { colorFor, initials } from './CharactersScreen';
 import VoiceRecordModal from './VoiceRecordModal';
 
 // Невеликий повторюваний блок: заголовок секції + іконка редагування,
-// яка перемикає секцію в режим textarea з кнопками Зберегти/Скасувати.
+// яка перемикає секцію в режим textarea. Підтвердження зміни — та сама
+// округла кнопка-галочка, що й для редагування імені персонажа, для
+// візуальної консистентності по всій картці.
 function EditableSection({ label, value, placeholder, onSave }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value || '');
@@ -42,12 +44,48 @@ function EditableSection({ label, value, placeholder, onSave }) {
             placeholder={placeholder}
             autoFocus
           />
-          <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-            <button className="btn-secondary" style={{ flex: 1 }} onClick={cancel}>
-              Скасувати
+          <div style={{ display: 'flex', gap: 8, marginTop: 7, alignItems: 'center', justifyContent: 'flex-end' }}>
+            <button
+              onClick={cancel}
+              aria-label="Скасувати"
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: 'var(--input)',
+                border: '1px solid var(--border)',
+                color: 'var(--muted)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 16,
+                fontWeight: 700,
+                lineHeight: 1,
+              }}
+            >
+              ✕
             </button>
-            <button className="btn-primary" style={{ flex: 1 }} onClick={save}>
-              Зберегти
+            <button
+              onClick={save}
+              aria-label="Зберегти"
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: 'var(--accent)',
+                border: 'none',
+                color: 'var(--accent-text)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 16,
+                fontWeight: 700,
+                lineHeight: 1,
+              }}
+            >
+              ✓
             </button>
           </div>
         </div>
@@ -171,7 +209,7 @@ export default function CharacterDetailScreen({
         </div>
         <div style={{ flex: 1 }}>
           {editingName ? (
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
               <input
                 className="input-field"
                 style={{ marginBottom: 0, fontSize: 15, padding: '6px 9px', flex: 1, minWidth: 0 }}
@@ -181,12 +219,26 @@ export default function CharacterDetailScreen({
                 onKeyDown={(e) => e.key === 'Enter' && saveName()}
               />
               <button
-                className="icon-btn"
-                style={{ fontSize: 20, flexShrink: 0, color: 'var(--accent)' }}
                 onClick={saveName}
                 aria-label="Зберегти ім'я"
+                style={{
+                  flexShrink: 0,
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: 'var(--accent)',
+                  color: 'var(--accent-text)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  lineHeight: 1,
+                }}
               >
-                <i className="ti ti-check" aria-hidden="true"></i>
+                ✓
               </button>
             </div>
           ) : (

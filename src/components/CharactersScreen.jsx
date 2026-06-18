@@ -25,28 +25,24 @@ function initials(name) {
 
 function SwipeableCharRow({ character, onOpen, onDelete }) {
   const col = colorFor(character.role);
-  const { offset, isOpen, pastDeleteThreshold, close, handleDeleteClick, swipeHandlers, maxSwipe } =
-    useSwipeToDelete(() => onDelete(character));
+  const { offset, pastDeleteThreshold, swipeHandlers } = useSwipeToDelete(() => onDelete(character));
 
   function handleRowClick() {
-    if (isOpen) {
-      close();
-      return;
-    }
     onOpen(character.id);
   }
 
-  const deleteZoneWidth = Math.max(maxSwipe, -offset);
+  const deleteZoneWidth = Math.max(0, -offset);
 
   return (
     <div className="swipe-row">
-      <div
-        className="swipe-delete-zone"
-        style={{ width: deleteZoneWidth, background: pastDeleteThreshold ? '#7A1F1F' : 'var(--danger)' }}
-        onClick={handleDeleteClick}
-      >
-        <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: pastDeleteThreshold ? 26 : 22 }}></i>
-      </div>
+      {deleteZoneWidth > 0 && (
+        <div
+          className="swipe-delete-zone"
+          style={{ width: deleteZoneWidth, background: pastDeleteThreshold ? '#7A1F1F' : 'var(--danger)' }}
+        >
+          <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: pastDeleteThreshold ? 26 : 20 }}></i>
+        </div>
+      )}
       <div
         className="char-item"
         style={{ transform: `translateX(${offset}px)` }}

@@ -3,34 +3,31 @@ import { GENRES } from '../initialData';
 import { useSwipeToDelete } from '../useSwipeToDelete';
 
 function SwipeableBookRow({ book, spineColor, onOpen, onDelete, onArchive }) {
-  const { offset, isOpen, pastDeleteThreshold, close, handleDeleteClick, swipeHandlers, maxSwipe } =
-    useSwipeToDelete(() => onDelete(book));
+  const { offset, pastDeleteThreshold, swipeHandlers, deleteThreshold } = useSwipeToDelete(() =>
+    onDelete(book)
+  );
 
   function handleRowClick() {
-    if (isOpen) {
-      close();
-      return;
-    }
     onOpen(book.id);
   }
 
-  // Червона зона розтягується разом з карткою (а не лишається фіксованої
-  // ширини maxSwipe), щоб видно було наскільки далеко тягнеш і коли саме
-  // спрацює видалення без додаткового тапу.
-  const deleteZoneWidth = Math.max(maxSwipe, -offset);
+  // Червона зона завжди розтягнута рівно на стільки, наскільки відтягнута
+  // картка — без мінімальної ширини, бо немає проміжної "відкритої" позиції.
+  const deleteZoneWidth = Math.max(0, -offset);
 
   return (
     <div className="swipe-row">
-      <div
-        className="swipe-delete-zone"
-        style={{
-          width: deleteZoneWidth,
-          background: pastDeleteThreshold ? '#7A1F1F' : 'var(--danger)',
-        }}
-        onClick={handleDeleteClick}
-      >
-        <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: pastDeleteThreshold ? 26 : 22 }}></i>
-      </div>
+      {deleteZoneWidth > 0 && (
+        <div
+          className="swipe-delete-zone"
+          style={{
+            width: deleteZoneWidth,
+            background: pastDeleteThreshold ? '#7A1F1F' : 'var(--danger)',
+          }}
+        >
+          <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: pastDeleteThreshold ? 26 : 20 }}></i>
+        </div>
+      )}
       <div
         className="book-card"
         style={{ transform: `translateX(${offset}px)` }}
@@ -239,7 +236,7 @@ function ArchiveReviewModal({ book, onClose, onConfirm }) {
         </div>
 
         <p className="desc-text" style={{ color: 'var(--muted)', marginBottom: 12 }}>
-          Книга переходить в архів. Можеш оцінити і написати рецензію зараз, або пропустити — повернутись можна пізніше з картки книги в архіві.
+          Книга переходить в архів. Оцінка та рецензія необов'язкові — можеш заповнити пізніше з картки книги в архіві.
         </p>
 
         <div className="sec-label">Оцінка (1-10)</div>
@@ -275,8 +272,8 @@ function ArchiveReviewModal({ book, onClose, onConfirm }) {
         />
 
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <button className="btn-secondary" style={{ flex: 1 }} onClick={() => onConfirm({ rating: null, review: '' })}>
-            Пропустити
+          <button className="btn-secondary" style={{ flex: 1 }} onClick={onClose}>
+            Назад
           </button>
           <button className="btn-primary" style={{ flex: 1 }} onClick={() => onConfirm({ rating, review })}>
             В архів

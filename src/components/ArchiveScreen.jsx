@@ -1,28 +1,24 @@
 import { useSwipeToDelete } from '../useSwipeToDelete';
 
 function SwipeableArchiveRow({ book, onOpen, onDelete, onUnarchive }) {
-  const { offset, isOpen, pastDeleteThreshold, close, handleDeleteClick, swipeHandlers, maxSwipe } =
-    useSwipeToDelete(() => onDelete(book));
+  const { offset, pastDeleteThreshold, swipeHandlers } = useSwipeToDelete(() => onDelete(book));
 
   function handleRowClick() {
-    if (isOpen) {
-      close();
-      return;
-    }
     onOpen(book.id);
   }
 
-  const deleteZoneWidth = Math.max(maxSwipe, -offset);
+  const deleteZoneWidth = Math.max(0, -offset);
 
   return (
     <div className="swipe-row">
-      <div
-        className="swipe-delete-zone"
-        style={{ width: deleteZoneWidth, background: pastDeleteThreshold ? '#7A1F1F' : 'var(--danger)' }}
-        onClick={handleDeleteClick}
-      >
-        <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: pastDeleteThreshold ? 26 : 22 }}></i>
-      </div>
+      {deleteZoneWidth > 0 && (
+        <div
+          className="swipe-delete-zone"
+          style={{ width: deleteZoneWidth, background: pastDeleteThreshold ? '#7A1F1F' : 'var(--danger)' }}
+        >
+          <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: pastDeleteThreshold ? 26 : 20 }}></i>
+        </div>
+      )}
       <div
         className="book-card"
         style={{ transform: `translateX(${offset}px)`, alignItems: 'flex-start' }}

@@ -182,14 +182,13 @@ html, body, #root {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 76px;
   background: var(--danger);
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 0 14px 14px 0;
-  cursor: pointer;
   z-index: 0;
+  transition: background 0.15s;
 }
 
 .swipe-delete-zone i {

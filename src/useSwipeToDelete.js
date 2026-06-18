@@ -1,28 +1,15 @@
 import { useState, useRef } from 'react';
 
-// Хук реалізує жест "свайп ліворуч → з'являється червона кнопка видалити".
-// Логіка побудована на touch-подіях (підходить для мобільного Telegram
-// WebView) з fallback на мишу для десктоп-тестування.
-//
-// Дві поведінки залежно від того, наскільки далеко потягнули:
-// - короткий свайп (між OPEN_THRESHOLD і DELETE_THRESHOLD): картка
-//   фіксується відкритою з червоною кнопкою, яку треба тапнути окремо.
-// - довгий свайп (за DELETE_THRESHOLD): видалення спрацьовує одразу
-//   при відпусканні пальця, без додаткового тапу — це стандартна
-//   поведінка "потягнув далеко = підтвердив дію" з багатьох застосунків.
-//
-// MAX_SWIPE — на скільки пікселів максимально відсувається картка коли
-// зафіксована ВІДКРИТОЮ (короткий свайп). Під час самого перетягування
-// дозволяємо тягнути далі за це значення (до DRAG_LIMIT), щоб користувач
-// фізично відчував різницю між "відкрити" і "видалити" жестами.
-const MAX_SWIPE = 76;
-const OPEN_THRESHOLD = MAX_SWIPE * 0.4;
-const DELETE_THRESHOLD = MAX_SWIPE * 2.2; // потягнути значно далі ширини кнопки = видалити одразу
-const DRAG_LIMIT = DELETE_THRESHOLD + 40; // невеликий запас, щоб рух не зупинявся різко на самому порозі
+// Одноступеневий свайп-видалення: тягнеш ліворуч, червона зона росте
+// разом з пальцем (без зупинки на проміжній "відкритій" позиції). Якщо
+// в момент відпускання пройдено DELETE_THRESHOLD — картка видаляється
+// одразу. Якщо ні — плавно повертається на нуль. Ніякої фіксованої
+// кнопки, яку треба тапати окремо.
+const DELETE_THRESHOLD = 130; // скільки пікселів треба протягнути, щоб спрацювало видалення
+const DRAG_LIMIT = DELETE_THRESHOLD + 50; // невеликий запас руху за порогом, щоб жест не "впирався" різко
 
 export function useSwipeToDelete(onDelete) {
   const [offset, setOffset] = useState(0);
-  const [isOpen, setIsOpen] = useState(false);
   const [pastDeleteThreshold, setPastDeleteThreshold] = useState(false);
   const startXRef = useRef(0);
   const startOffsetRef = useRef(0);
@@ -38,8 +25,6 @@ export function useSwipeToDelete(onDelete) {
     if (!draggingRef.current) return;
     const delta = clientX - startXRef.current;
     let next = startOffsetRef.current + delta;
-    // Під час руху дозволяємо тягнути аж до DRAG_LIMIT (далі за MAX_SWIPE) —
-    // саме це дає змогу розрізнити короткий і довгий свайп.
     next = Math.max(-DRAG_LIMIT, Math.min(0, next));
     setOffset(next);
     setPastDeleteThreshold(next < -DELETE_THRESHOLD);
@@ -50,30 +35,13 @@ export function useSwipeToDelete(onDelete) {
     draggingRef.current = false;
 
     if (offset < -DELETE_THRESHOLD) {
-      // Потягнули достатньо далеко — видаляємо без додаткового тапу.
       onDelete();
       return;
     }
 
-    if (offset < -OPEN_THRESHOLD) {
-      setOffset(-MAX_SWIPE);
-      setIsOpen(true);
-    } else {
-      setOffset(0);
-      setIsOpen(false);
-    }
-    setPastDeleteThreshold(false);
-  }
-
-  function close() {
+    // Не дійшли до порогу — картка плавно повертається на місце.
     setOffset(0);
-    setIsOpen(false);
     setPastDeleteThreshold(false);
-  }
-
-  function handleDeleteClick(e) {
-    e.stopPropagation();
-    onDelete();
   }
 
   // Touch handlers (мобільний — основний сценарій використання)
@@ -93,11 +61,8 @@ export function useSwipeToDelete(onDelete) {
 
   return {
     offset,
-    isOpen,
     pastDeleteThreshold,
-    close,
-    handleDeleteClick,
     swipeHandlers: { ...touchHandlers, ...mouseHandlers },
-    maxSwipe: MAX_SWIPE,
+    deleteThreshold: DELETE_THRESHOLD,
   };
 }
