@@ -3,9 +3,8 @@ import { GENRES } from '../initialData';
 import { useSwipeToDelete } from '../useSwipeToDelete';
 
 function SwipeableBookRow({ book, spineColor, onOpen, onDelete, onArchive }) {
-  const { offset, isOpen, close, handleDeleteClick, swipeHandlers, maxSwipe } = useSwipeToDelete(() =>
-    onDelete(book)
-  );
+  const { offset, isOpen, pastDeleteThreshold, close, handleDeleteClick, swipeHandlers, maxSwipe } =
+    useSwipeToDelete(() => onDelete(book));
 
   function handleRowClick() {
     if (isOpen) {
@@ -15,10 +14,22 @@ function SwipeableBookRow({ book, spineColor, onOpen, onDelete, onArchive }) {
     onOpen(book.id);
   }
 
+  // Червона зона розтягується разом з карткою (а не лишається фіксованої
+  // ширини maxSwipe), щоб видно було наскільки далеко тягнеш і коли саме
+  // спрацює видалення без додаткового тапу.
+  const deleteZoneWidth = Math.max(maxSwipe, -offset);
+
   return (
     <div className="swipe-row">
-      <div className="swipe-delete-zone" style={{ width: maxSwipe }} onClick={handleDeleteClick}>
-        <i className="ti ti-trash" aria-hidden="true"></i>
+      <div
+        className="swipe-delete-zone"
+        style={{
+          width: deleteZoneWidth,
+          background: pastDeleteThreshold ? '#7A1F1F' : 'var(--danger)',
+        }}
+        onClick={handleDeleteClick}
+      >
+        <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: pastDeleteThreshold ? 26 : 22 }}></i>
       </div>
       <div
         className="book-card"
@@ -53,6 +64,17 @@ function SwipeableBookRow({ book, spineColor, onOpen, onDelete, onArchive }) {
 export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings, onOpenArchive, onDeleteBook, onArchiveBook }) {
   const [activeGenre, setActiveGenre] = useState('all');
   const [archivingBook, setArchivingBook] = useState(null); // книга, для якої зараз показуємо форму рецензії
+  const [justArchivedTitle, setJustArchivedTitle] = useState(null); // короткий тост-підтвердження
+
+  function handleArchiveConfirm(info) {
+    const title = archivingBook.title;
+    onArchiveBook(archivingBook.id, info);
+    setArchivingBook(null);
+    // Книга щойно зникла зі списку (бо перемістилась в архів) — без цього
+    // повідомлення це виглядає так, наче вона видалилась, а не архівувалась.
+    setJustArchivedTitle(title);
+    setTimeout(() => setJustArchivedTitle(null), 3500);
+  }
 
   const usedGenres = useMemo(() => {
     const set = new Set(books.map((b) => b.genre));
@@ -82,14 +104,9 @@ export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings, 
     <div className="screen">
       <div className="topbar">
         <span className="topbar-title">Мої книги</span>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button className="icon-btn" onClick={onOpenArchive} aria-label="Архів">
-            <i className="ti ti-archive" aria-hidden="true"></i>
-          </button>
-          <button className="icon-btn" onClick={onSettings} aria-label="Налаштування">
-            <i className="ti ti-settings" aria-hidden="true"></i>
-          </button>
-        </div>
+        <button className="icon-btn" onClick={onSettings} aria-label="Налаштування">
+          <i className="ti ti-settings" aria-hidden="true"></i>
+        </button>
       </div>
 
       <div className="tabs">
@@ -147,11 +164,38 @@ export default function BooksScreen({ books, onOpenBook, onAddBook, onSettings, 
         <ArchiveReviewModal
           book={archivingBook}
           onClose={() => setArchivingBook(null)}
-          onConfirm={(info) => {
-            onArchiveBook(archivingBook.id, info);
-            setArchivingBook(null);
-          }}
+          onConfirm={handleArchiveConfirm}
         />
+      )}
+
+      {justArchivedTitle && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 70,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'var(--accent)',
+            color: 'var(--accent-text)',
+            padding: '10px 18px',
+            borderRadius: 20,
+            fontSize: 13,
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            zIndex: 2000,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+            cursor: 'pointer',
+          }}
+          onClick={() => {
+            setJustArchivedTitle(null);
+            onOpenArchive();
+          }}
+        >
+          <i className="ti ti-archive" aria-hidden="true"></i>
+          «{justArchivedTitle}» перенесено в архів · Відкрити
+        </div>
       )}
     </div>
   );

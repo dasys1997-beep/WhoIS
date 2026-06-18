@@ -1,9 +1,8 @@
 import { useSwipeToDelete } from '../useSwipeToDelete';
 
 function SwipeableArchiveRow({ book, onOpen, onDelete, onUnarchive }) {
-  const { offset, isOpen, close, handleDeleteClick, swipeHandlers, maxSwipe } = useSwipeToDelete(() =>
-    onDelete(book)
-  );
+  const { offset, isOpen, pastDeleteThreshold, close, handleDeleteClick, swipeHandlers, maxSwipe } =
+    useSwipeToDelete(() => onDelete(book));
 
   function handleRowClick() {
     if (isOpen) {
@@ -13,10 +12,16 @@ function SwipeableArchiveRow({ book, onOpen, onDelete, onUnarchive }) {
     onOpen(book.id);
   }
 
+  const deleteZoneWidth = Math.max(maxSwipe, -offset);
+
   return (
     <div className="swipe-row">
-      <div className="swipe-delete-zone" style={{ width: maxSwipe }} onClick={handleDeleteClick}>
-        <i className="ti ti-trash" aria-hidden="true"></i>
+      <div
+        className="swipe-delete-zone"
+        style={{ width: deleteZoneWidth, background: pastDeleteThreshold ? '#7A1F1F' : 'var(--danger)' }}
+        onClick={handleDeleteClick}
+      >
+        <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: pastDeleteThreshold ? 26 : 22 }}></i>
       </div>
       <div
         className="book-card"
@@ -54,7 +59,7 @@ function SwipeableArchiveRow({ book, onOpen, onDelete, onUnarchive }) {
   );
 }
 
-export default function ArchiveScreen({ books, onBack, onOpenBook, onUnarchive, onDeleteBook }) {
+export default function ArchiveScreen({ books, onOpenBook, onUnarchive, onDeleteBook }) {
   const sorted = [...books].sort((a, b) => (b.archivedAt || 0) - (a.archivedAt || 0));
 
   function handleDelete(book) {
@@ -67,11 +72,7 @@ export default function ArchiveScreen({ books, onBack, onOpenBook, onUnarchive, 
   return (
     <div className="screen">
       <div className="topbar">
-        <button className="back-btn" onClick={onBack}>
-          <i className="ti ti-arrow-left" aria-hidden="true"></i> Назад
-        </button>
         <span className="topbar-title">Архів</span>
-        <span style={{ width: 20 }}></span>
       </div>
 
       <div className="body">

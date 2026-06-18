@@ -108,7 +108,6 @@ export default function App() {
         {screen.name === 'archive' && (
           <ArchiveScreen
             books={data.books.filter((b) => b.archivedAt)}
-            onBack={() => navigate('books')}
             onOpenBook={(bookId) => navigate('characters', { bookId })}
             onUnarchive={async (bookId) => {
               await unarchiveBook(bookId);

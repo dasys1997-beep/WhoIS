@@ -14,7 +14,9 @@ create table if not exists user_settings (
 
 alter table user_settings enable row level security;
 
-create policy if not exists "users manage own settings"
+drop policy if exists "users manage own settings" on user_settings;
+
+create policy "users manage own settings"
   on user_settings for all
   using (true)
   with check (true);

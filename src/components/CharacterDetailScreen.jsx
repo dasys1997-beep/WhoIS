@@ -174,13 +174,18 @@ export default function CharacterDetailScreen({
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <input
                 className="input-field"
-                style={{ marginBottom: 0, fontSize: 15, padding: '6px 9px' }}
+                style={{ marginBottom: 0, fontSize: 15, padding: '6px 9px', flex: 1, minWidth: 0 }}
                 value={nameDraft}
                 onChange={(e) => setNameDraft(e.target.value)}
                 autoFocus
                 onKeyDown={(e) => e.key === 'Enter' && saveName()}
               />
-              <button className="icon-btn" style={{ fontSize: 18 }} onClick={saveName} aria-label="Зберегти ім'я">
+              <button
+                className="icon-btn"
+                style={{ fontSize: 20, flexShrink: 0, color: 'var(--accent)' }}
+                onClick={saveName}
+                aria-label="Зберегти ім'я"
+              >
                 <i className="ti ti-check" aria-hidden="true"></i>
               </button>
             </div>
